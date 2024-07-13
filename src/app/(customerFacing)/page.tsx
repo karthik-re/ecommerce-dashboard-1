@@ -5,6 +5,7 @@ import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { ProductCard, ProductCardSkeleton } from "@/components/ProductCard";
 import { Suspense } from "react";
+import { cache } from "@/lib/cache";
 
 const HomePage = () => {
   return (
@@ -25,21 +26,27 @@ const HomePage = () => {
 
 export default HomePage;
 
-const getPopularProducts = async () => {
-  return db.product.findMany({
-    where: { isAvailableForPurchase: true },
-    orderBy: { orders: { _count: "desc" } },
-    take: 6,
-  });
-};
+const getPopularProducts = cache(
+  () => {
+    return db.product.findMany({
+      where: { isAvailableForPurchase: true },
+      orderBy: { orders: { _count: "desc" } },
+      take: 6,
+    });
+  },
+  ["/", "getPopularProducts"],
+  {
+    revalidate: 60 * 60 * 24,
+  }
+);
 
-const getNewestProducts = async () => {
+const getNewestProducts = cache(() => {
   return db.product.findMany({
     where: { isAvailableForPurchase: true },
     orderBy: { createdAt: "desc" },
     take: 6,
   });
-};
+}, ["/", "getNewestProducts"]);
 
 type ProductGridSectionProps = {
   title: string;
